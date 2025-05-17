@@ -1,34 +1,43 @@
-const line = require('@line/bot-sdk');
+const axios = require('axios');
 
-const config = {
-  channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
-  channelSecret: process.env.LINE_CHANNEL_SECRET,
+module.exports = async (req, res) => {
+  if (req.method === 'POST') {
+    const { events } = req.body;
+
+    // 送信されたメッセージイベントの取得
+    const event = events[0];
+    if (event.type === 'message' && event.message.type === 'text') {
+      const userId = event.source.userId;
+
+      // 返すメッセージ
+      const replyMessage = `あなたのUser IDは: ${userId}`;
+
+      // LINEチャネルアクセストークン
+      const LINE_CHANNEL_ACCESS_TOKEN = 'Um35rpoMZMen8/lmYD/tm3UGt+7COY5pVejMvJBJBmt4yuZg+l5Gh37pC/AA1xGqHEnj45UsKzYDhN/tu+11IkkcuRNXG0HWzIAdureusKmZp2HtshdUi5qzRiq9x8KuWGiwwcOu/p46VDpQMaCnpgdB04t89/1O/w1cDnyilFU=';
+
+      // メッセージをLINEに送信
+      const url = 'https://api.line.me/v2/bot/message/reply';
+      const headers = {
+        'Authorization': `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      };
+
+      const payload = {
+        replyToken: event.replyToken,
+        messages: [{ type: 'text', text: replyMessage }],
+      };
+
+      try {
+        await axios.post(url, payload, { headers });
+        res.status(200).json({ message: 'User ID が通知されました' });
+      } catch (error) {
+        console.error('LINE API エラー:', error);
+        res.status(500).json({ error: '通知に失敗しました' });
+      }
+    } else {
+      res.status(400).json({ message: 'メッセージではないイベントです' });
+    }
+  } else {
+    res.status(405).json({ message: 'メソッドは許可されていません' });
+  }
 };
-
-const client = new line.Client(config);
-
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
-  }
-
-  try {
-    const events = req.body.events;
-    const results = await Promise.all(events.map(handleEvent));
-    res.status(200).json(results);
-  } catch (err) {
-    console.error('エラー:', err);
-    res.status(500).send('Internal Server Error');
-  }
-}
-
-function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') {
-    return Promise.resolve(null);
-  }
-
-  return client.replyMessage(event.replyToken, {
-    type: 'text',
-    text: `Echo: ${event.message.text}`,
-  });
-}
