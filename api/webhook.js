@@ -1,3 +1,5 @@
+const axios = require('axios');
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).end();
@@ -10,10 +12,9 @@ module.exports = async (req, res) => {
   }
 
   const event = events[0];
-  console.log('イベント受信:', JSON.stringify(event, null, 2));  // ここでイベント内容をログに出す
+  console.log('イベント受信:', JSON.stringify(event, null, 2));
 
   if (event.type === 'message' && event.message.type === 'text') {
-    // 返信処理はここから
     let sourceId;
 
     if (event.source.type === 'user') {
@@ -27,8 +28,24 @@ module.exports = async (req, res) => {
     const replyToken = event.replyToken;
     const replyMessage = `あなたのIDは: ${sourceId}`;
 
-    // LINEに返信するためのリクエスト準備
-    // axios.post(...) で返信処理を実行
+    const url = 'https://api.line.me/v2/bot/message/reply';
+    const headers = {
+      'Authorization': `Bearer ${process.env.LINE_CHANNEL_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    };
+
+    const payload = {
+      replyToken,
+      messages: [{ type: 'text', text: replyMessage }],
+    };
+
+    try {
+      await axios.post(url, payload, { headers });
+      return res.status(200).end();
+    } catch (error) {
+      console.error('返信エラー:', error.response ? error.response.data : error.message);
+      return res.status(500).end();
+    }
   }
 
   return res.status(200).end();
