@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
 
         const url = 'https://api.line.me/v2/bot/message/reply';
         const headers = {
-          'Authorization': `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
+          'Authorization': `Bearけer ${LINE_CHANNEL_ACCESS_TOKEN}`,
           'Content-Type': 'application/json',
         };
 
@@ -37,3 +37,14 @@ module.exports = async (req, res) => {
 
         await axios.post(url, payload, { headers });
         return res.status(200).end
+ }
+    }
+
+    // グループ以外やメッセージ以外は何もしないで200返す
+    res.status(200).end();
+
+  } catch (error) {
+    console.error('🚨 Webhook handler error:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
