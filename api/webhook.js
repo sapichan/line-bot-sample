@@ -1,16 +1,16 @@
-const groupId = '取得したグループID';
+if (event.type === 'message' && event.message.type === 'text') {
+  let sourceId;
 
-const payload = {
-  to: groupId,  // userIdの代わりにgroupIdを指定
-  messages: [{
-    type: 'text',
-    text: 'グループに通知テストだよ！',
-  }],
-};
+  if (event.source.type === 'user') {
+    sourceId = event.source.userId;
+  } else if (event.source.type === 'group') {
+    sourceId = event.source.groupId;  // グループIDを取得
+  } else if (event.source.type === 'room') {
+    sourceId = event.source.roomId;    // マルチチャットの場合
+  }
 
-await axios.post('https://api.line.me/v2/bot/message/push', payload, {
-  headers: {
-    'Authorization': `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
-    'Content-Type': 'application/json',
-  },
-});
+  const replyToken = event.replyToken;
+  const replyMessage = `あなたのIDは: ${sourceId}`;
+
+  // ここでreplyMessageを返す処理を行う
+}
