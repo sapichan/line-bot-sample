@@ -1,34 +1,32 @@
 const axios = require('axios');
 
-// この部分でLINEのアクセストークンを設定
-const LINE_CHANNEL_ACCESS_TOKEN = 'あなたのLINEチャンネルアクセストークン';
+// LINE Channel Access Token
+const LINE_CHANNEL_ACCESS_TOKEN = process.env.LINE_CHANNEL_ACCESS_TOKEN;
+const LINE_CHANNEL_SECRET = process.env.LINE_CHANNEL_SECRET;
 
 module.exports = async (req, res) => {
   if (req.method === 'POST') {
-    const { events } = req.body;  // LINE Webhookからのイベントデータ
+    const { events } = req.body;
+
+    if (!events || events.length === 0) {
+      return res.status(400).json({ message: 'イベントがありません' });
+    }
 
     // 最初のイベントデータを取得
     const event = events[0];
-    
-    // メッセージのイベントかどうかを確認
-    if (event.type === 'message' && event.message.type === 'text') {
-      // ユーザーIDを取得
-      const userId = event.source.userId;
 
-      // User ID をメッセージとして返信
+    if (event.type === 'message' && event.message.type === 'text') {
+      const userId = event.source.userId;
+      const replyToken = event.replyToken;
       const replyMessage = `あなたのUser IDは: ${userId}`;
 
-      // リプライトークンが含まれていることを確認
-      const replyToken = event.replyToken;
-      
-      // LINEにリプライを送るためのURL
+      // LINE APIにリプライする
       const url = 'https://api.line.me/v2/bot/message/reply';
       const headers = {
         'Authorization': `Bearer ${LINE_CHANNEL_ACCESS_TOKEN}`,
         'Content-Type': 'application/json',
       };
 
-      // 送信するデータ
       const payload = {
         replyToken: replyToken,
         messages: [{
@@ -38,17 +36,17 @@ module.exports = async (req, res) => {
       };
 
       try {
-        // リプライメッセージをLINEに送信
+        // LINE APIにPOSTリクエスト
         await axios.post(url, payload, { headers });
-        res.status(200).json({ message: 'User ID が通知されました' });
+        return res.status(200).json({ message: 'User ID が通知されました' });
       } catch (error) {
-        console.error('LINE API エラー:', error);
-        res.status(500).json({ message: '通知の送信に失敗しました' });
+        console.error('LINE API エラー:', error.response ? error.response.data : error.message);
+        return res.status(500).json({ message: '通知の送信に失敗しました', error: error.response ? error.response.data : error.message });
       }
     } else {
-      res.status(400).json({ message: 'メッセージイベントではありません' });
+      return res.status(400).json({ message: 'メッセージイベントではありません' });
     }
   } else {
-    res.status(405).json({ message: 'メソッドが許可されていません' });
+    return res.status(405).json({ message: 'メソッドが許可されていません' });
   }
 };
