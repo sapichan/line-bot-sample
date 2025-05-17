@@ -1,9 +1,10 @@
 {
-  "name": "line-webhook",
+  "name": "line-bot",
   "version": "1.0.0",
-  "description": "LINE Bot Webhook to get user ID",
+  "type": "module",
   "main": "api/webhook.js",
   "dependencies": {
-    "axios": "^0.21.1"
+    "axios": "^1.6.0",
+    "raw-body": "^2.5.2"
   }
 }
